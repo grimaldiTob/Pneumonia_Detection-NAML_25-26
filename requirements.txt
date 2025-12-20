@@ -1,0 +1,5 @@
+opendatasets
+pandas
+matplotlib
+torch
+numpy

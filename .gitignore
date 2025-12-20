@@ -1,0 +1,10 @@
+# Ignore the data folder
+chest_xray/
+
+# Ignore python cache files
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+.venv/
+.env
