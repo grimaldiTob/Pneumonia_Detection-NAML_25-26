@@ -242,9 +242,9 @@ for batch_idx, (images, labels) in enumerate(dataloaders["train"]):
     
 # =======================================================================
 
-# apply our data to the Gated Recurrent Unit (GRU)
+# define the GRU object which allows to specify the BiGRU behaviour through the 'bidirectional' parameter.
 bigru = nn.GRU(
-            input_size= 128,
+            input_size= 64,
             hidden_size= 256,
             num_layers= 2,
             dropout= 0.3,
@@ -252,20 +252,58 @@ bigru = nn.GRU(
             batch_first=True
         )
 
-for feature in features:
-    feature = feature.unsqueeze(1).repeat(1, 25, 1)
-    
-    feature, _ = bigru(feature)
-    print(feature.shape)
+bigru_output = []
 
-projections = nn.Sequential(
-    nn.Linear(512, 128),
-    nn.Linear(128, 64)
+# update again our features in order to add the timesteps to the dataset 
+for feature in features:
+    # create 25 time frames of the image that will be passed to the bigru
+    feature = feature.unsqueeze(1).repeat(1, 25, 1)
+        
+    feature, _ = bigru(feature) # each batch of tensors is passed as input to the BiGRU.
+    bigru_output.append(feature)
+    # Output is supposed to be in the dimension of (batch_size, time_steps, GRU_layers*hidden_size) for each batch
+print(bigru_output[0].shape)
+    
+# ==========================================================================
+
+import snntorch as snn
+
+num_steps = 25
+beta = 0.95
+lif1 = snn.Leaky(beta=beta, init_hidden=True) # only returns spk
+lif2 = snn.Leaky(beta=beta, init_hidden=True, output=True) # returns mem and spk if output=True
+
+net = nn.Sequential(
+    nn.Flatten(),
+    lif1
 )
 
-for feature in features:
-    feature = projections(feature)
-    print(feature.shape)
+spk_list = []
+mem_list = []
+
+for input in bigru_output:
+    print(input.shape)
+    for step in range(num_steps):
+        # we take each step of the tensor
+        snn_input = input[:, step, :] # our tensor is [batch_size, num_steps, 512]
+        print()
+        spk1, mem1 = net(snn_input)
+        
+        spk_list.append(spk1)
+        mem_list.append(mem1)
+        
+print(spk_list)
+print(spk_list[0])
+print(mem_list[0])
+    
+net = nn.Sequential(nn.Flatten(),
+                    nn.Linear(784, num_hidden),
+                    lif1,
+                    nn.Linear(1000, num_output),
+                    lif2).to(device)
+
+
+
 
 
 

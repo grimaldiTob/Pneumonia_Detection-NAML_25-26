@@ -4,4 +4,4 @@ matplotlib
 torch
 numpy
 imblearn
-
+snntorch
