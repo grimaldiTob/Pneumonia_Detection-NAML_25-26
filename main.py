@@ -263,47 +263,49 @@ for feature in features:
     bigru_output.append(feature)
     # Output is supposed to be in the dimension of (batch_size, time_steps, GRU_layers*hidden_size) for each batch
 print(bigru_output[0].shape)
-    
+   
 # ==========================================================================
 
 import snntorch as snn
 
 num_steps = 25
-beta = 0.95
-lif1 = snn.Leaky(beta=beta, init_hidden=True) # only returns spk
+beta = 0.95 # setup value of beta (given in the paper)
+
+lif1 = snn.Leaky(beta=beta, init_hidden=True, output=True) # only returns spk
 lif2 = snn.Leaky(beta=beta, init_hidden=True, output=True) # returns mem and spk if output=True
 
-net = nn.Sequential(
-    nn.Flatten(),
-    lif1
-)
+spk_list = [] # snn results will be saved here 
+mem_list = [] # membrane potential is saved here
 
-spk_list = []
-mem_list = []
+spk_aggregation = [] # aggregation of the spikes (mean)
 
 for input in bigru_output:
-    print(input.shape)
     for step in range(num_steps):
         # we take each step of the tensor
         snn_input = input[:, step, :] # our tensor is [batch_size, num_steps, 512]
-        print()
-        spk1, mem1 = net(snn_input)
+        
+        spk1, mem1 = lif1(snn_input)
         
         spk_list.append(spk1)
         mem_list.append(mem1)
         
-print(spk_list)
-print(spk_list[0])
-print(mem_list[0])
-    
-net = nn.Sequential(nn.Flatten(),
-                    nn.Linear(784, num_hidden),
-                    lif1,
-                    nn.Linear(1000, num_output),
-                    lif2).to(device)
+    stacked_spk_list = torch.stack(spk_list, dim=1)
+    spk_aggregation.append(stacked_spk_list.mean(dim=1))
+    del spk_list
+    spk_list = []
+        
+print(len(spk_list)) # make sure the spk list is empty now
+print(mem_list[0].shape)
+print(len(spk_aggregation)) # number of batches
+print(spk_aggregation[0].shape) # aggregated data dimension
 
-
-
+decision_head = nn.Sequential(
+    nn.Linear(512, 512),
+    nn.Dropout(0.4),
+    nn.Linear(512, 128),
+    nn.Dropout(0.4),
+    nn.Linear(128, 2)
+)
 
 
 
