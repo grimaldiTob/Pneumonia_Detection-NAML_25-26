@@ -308,5 +308,13 @@ decision_head = nn.Sequential(
 )
 
 
+for b in range(len(spk_aggregation)):
+    output = decision_head(spk_aggregation[b])
+    
+
+
+
+
+
 
 
