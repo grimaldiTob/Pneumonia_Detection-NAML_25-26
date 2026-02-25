@@ -1,5 +1,7 @@
 # Ignore the data folder
 chest_xray/
+./metrics_history.csv
+./output.png
 
 # Ignore python cache files
 __pycache__/
