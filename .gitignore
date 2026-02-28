@@ -2,6 +2,7 @@
 chest_xray/
 ./metrics_history.csv
 ./output.png
+artifacts/
 
 # Ignore python cache files
 __pycache__/
